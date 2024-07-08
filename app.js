@@ -44,32 +44,37 @@ app.get("/", async (req, res, next) => {
 
 
 app.post("/api/user/register", async (req, res, next) => {
-    const user = getUserByUsername(req.body.username);
+    try {
+        const user = getUserByUsername(req.body.username);
 
-    if (user) {
-        res.status(400).send("User already exists");
-    } else {
-        // hashing process src: https://www.freecodecamp.org/news/how-to-hash-passwords-with-bcrypt-in-nodejs/
-        bcrypt.genSalt(10, (err, salt) => {
-            if (err) {
-                console.log(err);
-                return res.status(400).send("Could not create user");
-            }
-            console.log(req.body.password, " ### ", salt);
-            bcrypt.hash(req.body.password, salt, (err, hash) => {
+        if (user) {
+            res.status(400).send("User already exists");
+        } else {
+            // hashing process src: https://www.freecodecamp.org/news/how-to-hash-passwords-with-bcrypt-in-nodejs/
+            bcrypt.genSalt(10, (err, salt) => {
                 if (err) {
                     console.log(err);
                     return res.status(400).send("Could not create user");
                 }
-                const new_user = {
-                    id: uuidv4(),
-                    username: req.body.username,
-                    password: hash
-                }
-                users.push(new_user);
-                res.send("User created successfully");
+                console.log(req.body.password, " ### ", salt);
+                bcrypt.hash(req.body.password, salt, (err, hash) => {
+                    if (err) {
+                        console.log(err);
+                        return res.status(400).send("Could not create user");
+                    }
+                    const new_user = {
+                        id: uuidv4(),
+                        username: req.body.username,
+                        password: hash
+                    }
+                    users.push(new_user);
+                    res.status(200).json(new_user);
+                });
             });
-        });
+        }
+    } catch (err) {
+        console.error("Error while register: ", err);
+        return res.status(500).send("Internal server error");
     }
 });
 
@@ -103,7 +108,8 @@ app.get("/api/user/list", async (req, res, next) => {
     try {
         res.status(200).json(users);
     } catch (err) {
-        console.log("Error while getting  users: ", err);
+        console.error("Error while getting  users: ", err);
+        return res.status(500).send("Internal Server error");
     }
 });
 
