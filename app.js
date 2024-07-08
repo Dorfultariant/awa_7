@@ -87,10 +87,11 @@ app.post("/api/user/login", async (req, res, next) => {
         if (!found_usr) {
             return res.status(401);
         }
-        if (bcrypt.compare(req.body.password, found_usr.password)) {
+        const comp = await bcrypt.compare(req.body.password, found_usr.password);
+        console.log(comp);
+        if (comp) {
             // JWT token for authentication
             const jwt_token = jwt.sign({ username: found_usr.username }, supersecret, { expiresIn: "1h" });
-            console.log(res);
 
             // session cookie
             res.cookie("connect.sid", jwt_token, { httpOnly: true });
