@@ -23,9 +23,10 @@ const initPassport = require("./passport-config");
 initPassport(passport, getUserByUsername, getUserById);*/
 
 app.use(cookie_parser());
+const supersecret = "supersecret";
 
 app.use(session({
-    secret: process.env.SECRET,
+    secret: supersecret, // process.env.SECRET
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false },
@@ -83,7 +84,7 @@ app.post("/api/user/login", async (req, res, next) => {
         }
         if (bcrypt.compare(req.body.password, found_usr.password)) {
             // JWT token for authentication
-            const jwt_token = jwt.sign({ username: found_usr.username }, process.env.SECRET, { expiresIn: "1h" });
+            const jwt_token = jwt.sign({ username: found_usr.username }, supersecret, { expiresIn: "1h" });
             console.log(res);
 
             // session cookie
