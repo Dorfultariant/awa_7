@@ -1,9 +1,18 @@
+
+/*
+ NOTE: This weekly task relies hevily upon example code from Erno Vanhalas course material
+
+ */
+
+
 const { users, getUserById, getUserByUsername } = require("./data/data");
 
 const express = require("express");
 const path = require("path");
 const bcrypt = require("bcrypt");
-// const passport = require("passport");
+const passport = require("passport");
+const passport_local = require("passport-local");
+
 const jwt = require("jsonwebtoken");
 
 // little help from src: https://refine.dev/blog/node-js-uuid/#2-uuid-npm-package
@@ -18,9 +27,12 @@ const dotenv = require("dotenv").config();
 
 app.use(express.static("public"));
 app.use(express.json());
-/*
-const initPassport = require("./passport-config");
-initPassport(passport, getUserByUsername, getUserById);*/
+app.use(express.urlencoded({ extended: false }));
+
+
+const initialize_passport = require("./passport-config");
+initialize_passport(passport, getUserByUsername, getUserById);
+
 
 app.use(cookie_parser());
 const supersecret = "supersecret";
@@ -29,13 +41,14 @@ app.use(session({
     secret: supersecret, // process.env.SECRET
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false },
+    cookie: { secure: false, sameSite: "lax" },
     maxAge: 1000 * 60 * 5 // 1000ms * 60 sec * 5 = 5 min
 }));
 
-/*
+
 app.use(passport.initialize());
-app.use(passport.session());*/
+app.use(passport.session());
+
 
 
 app.get("/", async (req, res, next) => {
@@ -43,7 +56,7 @@ app.get("/", async (req, res, next) => {
 });
 
 
-app.post("/api/user/register", async (req, res, next) => {
+app.post("/api/user/register", checkNotAuthenticated, async (req, res, next) => {
     try {
         const user = getUserByUsername(req.body.username);
 
@@ -60,7 +73,7 @@ app.post("/api/user/register", async (req, res, next) => {
                 bcrypt.hash(req.body.password, salt, (err, hash) => {
                     if (err) {
                         console.log(err);
-                        return res.status(400).send("Could not create user");
+                        return res.status(400).send("Could not create user"); register
                     }
                     const new_user = {
                         id: uuidv4(),
@@ -79,23 +92,23 @@ app.post("/api/user/register", async (req, res, next) => {
 });
 
 
-app.post("/api/user/login", async (req, res, next) => {
+app.post("/api/user/login", checkNotAuthenticated, async (req, res, next) => {
     try {
-
+        console.log("This is login code");
         const found_usr = getUserByUsername(req.body.username);
 
         if (!found_usr) {
-            return res.status(401);
+            return res.status(401).json({ msg: "User not found" });
         }
         const comp = await bcrypt.compare(req.body.password, found_usr.password);
-        console.log(comp);
+        console.log("Is passwd valid: ", comp);
         if (comp) {
             // JWT token for authentication
             const jwt_token = jwt.sign({ username: found_usr.username }, supersecret, { expiresIn: "1h" });
 
             // session cookie
             res.cookie("connect.sid", jwt_token, { httpOnly: true });
-            res.status(200).send("Successful login").sid;
+            res.redirect("/api/secret");
         } else {
             return res.status(401).send("Invalid credentials");
         }
@@ -103,6 +116,12 @@ app.post("/api/user/login", async (req, res, next) => {
         console.error("Error while login: ", err);
         return res.status(500).send("Internal Server Error");
     }
+});
+
+
+
+app.get("/api/secret", checkAuthenticated, async (req, res, next) => {
+    res.status(200).json({ msg: "This is Very Secret place." });
 });
 
 app.get("/api/user/list", async (req, res, next) => {
@@ -115,23 +134,41 @@ app.get("/api/user/list", async (req, res, next) => {
 });
 
 
-
 function checkAuthenticated(req, res, next) {
     if (req.isAuthenticated()) {
-        return next();
+        console.log("Is authenticated, apparently");
+        return next()
     }
 
-    return res.redirect("/api/user/login");
+    return res.redirect("/")
 }
 
 function checkNotAuthenticated(req, res, next) {
     if (req.isAuthenticated()) {
-        return res.redirect("/");
+        console.log("Is authenticated also");
+        return res.redirect("/api/secret");
     }
-    return next();
+    return next()
 }
 
 
+function verifyToken(req, res, next) {
+    const extracted_token = req.cookies["connect.sid"];
+
+    if (!extracted_token) {
+        return res.status(401).send("No token received");
+    }
+
+    try {
+        const verify_token = jwt.verify(extracted_token, supersecret);
+        // req.user = verify_token;
+        // next();
+
+    } catch (err) {
+        console.error("Error while verifying token: ", err);
+        return res.status(403).send("Invalid token");
+    }
+}
 
 app.listen(process.env.PORT, () => {
     console.log("Server started at", process.env.PORT);
