@@ -1,7 +1,7 @@
 {
     "name": "seventh-swamphony",
     "version": "1.0.0",
-    "main": "index.js",
+    "main": "app.js",
     "scripts": {
         "start": "node app.js"
     },
@@ -14,12 +14,12 @@
         "dotenv": "^16.4.5",
         "express": "^4.19.2",
         "jsonwebtoken": "^9.0.2",
-        "nodemon": "^3.1.4",
         "passport-local": "^1.0.0",
         "uuid": "^10.0.0",
-        "passport": "^0.7.0"
+        "passport": "^0.7.0",
+        "express-session": "^1.18.0"
     },
     "devDependencies": {
-        "express-session": "^1.18.0"
+        "nodemon": "^3.1.4"
     }
 }
