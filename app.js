@@ -9,7 +9,6 @@ const app = express();
 const bcrypt = require('bcrypt');
 const passport = require('passport');
 const session = require('express-session');
-const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 
