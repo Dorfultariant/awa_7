@@ -65,6 +65,10 @@ app.use((req, res, next) => {
 app.get("/", (req, res) => {
     res.status(200).send("<h1>Hello Also There</h1>");
 });
+app.get("/invalid", (req, res) => {
+    res.status(401).send("Wrong credentials");
+});
+
 
 app.get("/api/secret", checkAuthenticated, (req, res) => {
     res.status(200).send("This is Very Secret place.");
